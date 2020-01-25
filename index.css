@@ -3,10 +3,6 @@ body {
     color: white;
 }
 
-ul li {
-    background-color: #242424;
-}
-
 li.list-group-item {
     background-color: #242424;
 }
