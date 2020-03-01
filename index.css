@@ -6,3 +6,12 @@ body {
 li.list-group-item {
     background-color: #242424;
 }
+
+.centre-yt {
+    padding-top: 25px;
+    text-align: center;
+}
+
+iframe {
+    display: inline-block;
+}
