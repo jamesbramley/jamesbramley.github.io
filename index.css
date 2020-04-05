@@ -23,3 +23,11 @@ img {
     width: auto;
     height: auto;
 }
+
+.code {
+    color: white;
+    background-color: white;
+    width: 50%;
+    height: 100%;
+    min-height: 1000px;
+}
