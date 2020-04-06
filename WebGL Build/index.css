@@ -1,0 +1,33 @@
+body {
+    background-color: #343434;
+    color: white;
+}
+
+li.list-group-item {
+    background-color: #242424;
+}
+
+.centre-yt {
+    padding-top: 25px;
+    text-align: center;
+}
+
+iframe {
+    display: inline-block;
+}
+
+img {
+    display: block;
+    max-width:867px;
+    max-height:1125px;
+    width: auto;
+    height: auto;
+}
+
+.code {
+    color: white;
+    background-color: white;
+    width: 50%;
+    height: 100%;
+    min-height: 1000px;
+}
