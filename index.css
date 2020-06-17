@@ -36,17 +36,34 @@ iframe {
 a {
     color: deeppink;
 }
+@media (max-width: 1000px) {
+    /* CSS that should be displayed if width is equal to or less than 100px goes here */
+    img {
+        min-width: 350px;
+    }
+}
+
+@media (max-width: 550px) {
+    /* CSS that should be displayed if width is equal to or less than 350px goes here */
+    iframe {
+        min-width: 250px;
+        max-height: 150px;
+    }
+
+    img {
+        min-width: 250px;
+    }
+
+    #page_header {
+        max-width: 100%;
+    }
+}
 
 iframe {
     display: inline-block;
 }
 
-img {
-    display: block;
-    max-width:867px;
-    max-height:1125px;
-    min-width: 350px;
-}
+
 
 .code {
     color: white;
