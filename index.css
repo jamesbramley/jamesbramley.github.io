@@ -21,8 +21,16 @@ h1, h2, h3 {
     max-width: 100%;
 }
 
+.align-images {
+    display: grid;
+}
+
 #page_header {
     max-width: 90%;
+}
+
+iframe {
+    min-width: 350px;
 }
 
 a {
@@ -37,8 +45,7 @@ img {
     display: block;
     max-width:867px;
     max-height:1125px;
-    width: auto;
-    height: auto;
+    min-width: 350px;
 }
 
 .code {
