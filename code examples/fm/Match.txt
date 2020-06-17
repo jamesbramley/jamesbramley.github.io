@@ -1,0 +1,127 @@
+
+using System.Collections.Generic;
+using System.Linq;
+
+public class Match
+{
+    private const int MatchLength = 360;  // 4 events per minute.
+    public int Time { get; private set; }
+    private int addedTime;
+    
+    public MatchDaySquad HomeTeamSquad { get; set; }
+    public MatchDaySquad AwayTeamSquad { get; set; }
+    
+    public int HomeTeamScore { get; set; }
+    public int AwayTeamScore { get; set; }
+
+    private Pitch pitch;
+    
+    public Fixture Fixture { get; private set; }
+
+    public List<PitchPlayer> GetPlayers()
+    {
+        return pitch.GetPlayers();
+    }
+
+    public bool IsOver()
+    {
+        return Time > MatchLength + addedTime;
+    }
+
+    public void IssueInstructions()
+    {
+        
+    }
+
+    public Pitch GetPitch()
+    {
+        return pitch;
+    }
+
+    public Match(Fixture fixture)
+    {
+        Fixture = fixture;
+        addedTime = MathTools.RandomInt(0, 20);
+        HomeTeamSquad = new MatchDaySquad(fixture.homeTeamId);
+        AwayTeamSquad = new MatchDaySquad(fixture.awayTeamId);
+        pitch = new Pitch(HomeTeamSquad.SelectStarting11(), AwayTeamSquad.SelectStarting11());
+    }
+
+    public void AdvanceTime()
+    {
+        Time += 1;
+        
+        // If the ball is loose, players in the area need to try and get it.
+        HandleLooseBall();
+        pitch.UpdateDictionaries();
+        foreach (var pitchPlayer in pitch.GetPlayers())
+        {
+            // All of the players will act, and noteworthy actions will be recorded.
+            pitchPlayer.Act();
+        }
+        
+        // Get all of these noteworthy actions. Their results should already be handled, we just need to display them.
+        var noteworthyActions = pitch.GetAllNoteworthyActions();
+        foreach (var action in noteworthyActions)
+        {
+            HandleAction(action);
+        }
+    }
+
+    private void HandleAction(NoteworthyAction noteworthyAction)
+    {
+        switch (noteworthyAction.actionOutcome)
+        {
+            case ActionOutcome.ScoreGoal:
+                ScoreGoal(noteworthyAction.homeOrAway);
+                pitch.ResetPitch(GetOpposite(noteworthyAction.homeOrAway));
+                break;
+        }
+    }
+
+    private PitchPlayer.TeamType GetOpposite(PitchPlayer.TeamType homeOrAway)
+    {
+        var opposite = homeOrAway == PitchPlayer.TeamType.Home ? PitchPlayer.TeamType.Away : PitchPlayer.TeamType.Home;
+        return opposite;
+    }
+
+    private void ScoreGoal(PitchPlayer.TeamType homeOrAway)
+    {
+        if (homeOrAway == PitchPlayer.TeamType.Home)
+        {
+            HomeTeamScore += 1;
+            return;
+        }
+
+        AwayTeamScore += 1;
+    }
+
+    private void HandleLooseBall()
+    {
+        var playersInArea = pitch.GetOutfieldPlayersInArea(pitch.Ball.Area);
+        var pickUpChances = new List<int>();
+        if (pitch.Ball.Loose && playersInArea.Count > 0)
+        {
+            for (int i = 0; i < playersInArea.Count; i++)
+            {
+                // The fastest player will usually reach a loose ball first.
+                var playerStats = playersInArea[i].GetPlayer().Stats;
+                pickUpChances.Add(playerStats.Speed + MathTools.RandomGaussianInRange(-20, 20));
+            }
+            var best = pickUpChances.Max();
+            var playerToGetBall = playersInArea[pickUpChances.IndexOf(best)];
+            playerToGetBall.GetBall();
+        }
+        
+    }
+
+    public void HalfTime()
+    {
+        
+    }
+
+    public int GetMinute()
+    {
+        return 90*Time / MatchLength;
+    }
+}

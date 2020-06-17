@@ -1,0 +1,121 @@
+
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using UnityEngine;
+
+public class FixtureGenerator
+{
+    private List<int> teams;
+
+    public FixtureGenerator(List<int> teams)
+    {
+        this.teams = teams;
+    }
+
+    public List<MatchDay> GenerateMatchDays()
+    {
+        var teamCount = teams.Count;
+        Debug.Log("Number of teams: " + teamCount);
+        var noOfWeeks = teamCount * 2 - 2;
+        Debug.Log("Number of weeks: " + noOfWeeks);
+        var matchDays = new List<MatchDay>();
+        
+        var matchDay1 = new MatchDay(0);
+        
+        for (int i = 0; i < teamCount/2; i++)
+        {
+            var homeTeam = teams[i];
+            var awayTeam = teams[teamCount - i - 1];
+            var fixture = new Fixture(homeTeam, awayTeam);
+            matchDay1.AddFixture(fixture);
+        }
+        
+        matchDays.Add(matchDay1);
+
+        var previousMatchDay = matchDay1;
+        
+        for (int i = 1; i < noOfWeeks/2; i++)
+        {
+            var matchDay = new MatchDay(previousMatchDay.MatchDayNumber + 1);
+            var newMatchDayFixtures = RotateFixtures(previousMatchDay.Fixtures);
+            foreach (var fixture in newMatchDayFixtures)
+            {
+                matchDay.AddFixture(fixture);
+            }
+            
+            matchDays.Add(matchDay);
+            previousMatchDay = matchDay;
+        }
+
+        for (int i = 0; i < noOfWeeks/2; i++)
+        {
+            var matchDay = matchDays[i];
+            var reverseMatchDay = new MatchDay(matchDay.MatchDayNumber + noOfWeeks / 2);
+            foreach (var fixture in matchDay.Fixtures)
+            {
+                var reverseFixture = ReverseFixture(fixture);
+                reverseMatchDay.AddFixture(reverseFixture);
+            }
+            
+            matchDays.Add(matchDay);
+        }
+        
+        //matchDays = ReorderMatchDays(matchDays);
+
+        return matchDays;
+    }
+
+    private Fixture ReverseFixture(Fixture fixture)
+    {
+        var reversedFixture = new Fixture();
+        reversedFixture.homeTeamId = fixture.awayTeamId;
+        reversedFixture.awayTeamId = fixture.homeTeamId;
+        return reversedFixture;
+    }
+
+    private List<MatchDay> ReorderMatchDays(List<MatchDay> matchDays)
+    {
+        matchDays.Shuffle();
+        for (int i = 0; i < matchDays.Count; i++)
+        {
+            matchDays[i].SetMatchDay(i);
+        }
+        return matchDays;
+    }
+
+    private List<Fixture> RotateFixtures(List<Fixture> fixtures)
+    {
+        var matchDayFixtures = new List<Fixture>();
+        var homeTeams = new List<int>();
+        var awayTeams = new List<int>();
+
+        for (int i = 0; i < fixtures.Count; i++)
+        {
+            var fixture = fixtures[i];
+            if (i == 0)
+            {
+                homeTeams.Add(fixture.homeTeamId);
+                homeTeams.Add(fixture.awayTeamId);
+            }
+            else if (i == fixtures.Count - 1)
+            {
+                awayTeams.Add(fixture.awayTeamId);
+                awayTeams.Add(fixture.homeTeamId);
+            }
+            else
+            {
+                homeTeams.Add(fixture.homeTeamId);
+                awayTeams.Add(fixture.awayTeamId);
+            }
+        }
+
+        for (int i = 0; i < homeTeams.Count; i++)
+        {
+            var fixture = new Fixture(homeTeams[i], awayTeams[i]);
+            matchDayFixtures.Add(fixture);
+        }
+
+        return matchDayFixtures;
+    }
+}

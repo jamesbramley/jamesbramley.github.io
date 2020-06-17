@@ -18,26 +18,26 @@
 </head>
 <body>
 
-<div class="container-fluid">
+<div class="container-fluid" id="page_header">
     <div class="container-fluid">
-        <h1>James Bramley</h1>
+        <h1 class="gold_header">James Bramley</h1>
         <p><b>Contact:</b> 07823518858</p>
         <p><b>Email:</b> jamesjebr@gmail.com</p>
         <p><a href="https://www.linkedin.com/in/james-e-bramley/"><b>LinkedIn</b></a></p>
     </div>
     <div class="container-fluid">
-        <h2>Game Development Portfolio</h2>
+        <h2 class="gold_header">Game Development Portfolio</h2>
         <p>
             Thank you for taking a look at my portfolio! My name is James Bramley and I am curently a 4th Year student at
             Durham University studying Computer Science. I have over 2 and a half years of experience using the Unity
             Game Engine and C# to create both personal and university projects. This website is a portfolio of some of
-            these projects. I have recently picked up Unreal Engine 4 but am yet to develop any projects for it.
+            these projects. I have recently picked up Unreal Engine 4 but am yet to develop any substantial projects for it.
         </p>
         <p>
             For each of the projects I have provided code examples for you to look at if you so desire.
         </p>
     </div>
-    <div class="container-fluid">
+    <div class="container-fluid" id="list_container">
         <ul class="list-group">
             <li class="list-group-item">
                 <h3><b>Tower Survival Game</b></h3>
@@ -59,19 +59,10 @@
                     I included a variety of gameplay elements like powerups and a slow-down time mechanic.
                 </p>
                 <p>
-                    The objective of the game is to reach as low as you can in the tower while avoiding the endless
-                    stream of falling bombs.
-                </p>
-                <p>
                     The game features multiple playable characters each with different stats that affect the way they
                     play. To add some objective to the game, high scores are recorded and many things are locked at
                     first. The player must collect coins while they play with which they can purchase the extra
                     content like new characters, music tracks and environments.
-                </p>
-                <p>
-                    While playing the game I realised its potential for multiplayer and so I added a local multiplayer
-                    option for up to 4 friends to play at once. In the near future, I plan to implement online
-                    multiplayer and release the game on Steam.
                 </p>
                 <p>
                     All of the character, bomb and UI assets were created by me. The music heard in the video is placeholder
@@ -103,9 +94,39 @@
             </li>
 
             <li class="list-group-item">
+                <h3><b>Racing Game</b></h3>
+                <div class="row">
+                    <div class="col-sm">
+                        <a href="code%20examples/drift/CameraMovement.txt">CameraMovement.cs</a>
+                    </div>
+                    <div class="col-sm">
+                        <a href="code%20examples/drift/RoadSegment.txt">RoadSegment.cs</a>
+                    </div>
+                </div>
+                <p>
+                    I wanted to make a 3D racing game as I am a fan of arcade racers and wanted to try my hand at a
+                    genre of game I hadn't yet worked on.
+                    I implemented some procedural mesh generation for the roads to make the racetrack easier to
+                    construct, based on <a href="https://www.youtube.com/watch?v=o9RK6O2kOKo"><b>this Unite 2015 talk.</b></a>.
+                    I also created a camera movement system which adapts its position based on the speed and position of
+                    the car.
+                    Car model taken from the Unity asset store.
+                </p>
+                <div class="row centre-yt">
+                    <div class="col-sm">
+                        <iframe width="720" height="405" src="https://www.youtube.com/embed/YM4uh6lTrTw" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                    <div class="col-sm">
+                        <iframe width="720" height="405" src="https://www.youtube.com/embed/bH8tYo4Dsxk" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </li>
+
+            <li class="list-group-item">
                 <h3><b>Ludum Dare 46 - Memes Never Die</b></h3>
                 <h4><a href="LD46/index.html"><b>Play in Browser</b></a></h4>
                 <p><a href="https://bitbucket.org/ipingui/ld46/src/master/"><b>All Source Code</b></a></p>
+                <p><a href="https://ldjam.com/events/ludum-dare/46/memes-never-die"><b>Ludum Dare Submission</b></a></p>
                 <p>
                     I participated in Ludum Dare 46, where the theme was 'Keep it Alive'. I decided to go for a more
                     unique interpretation of the theme, where the objective is to keep a meme created by the user
@@ -139,62 +160,6 @@
             </li>
 
             <li class="list-group-item">
-                <h3><b>2D Platformer</b></h3>
-                <p><a href="https://drive.google.com/open?id=10zHokjVrOw7AWaiPuyx0ijtF1g0vZVZT"><b>DOWNLOAD</b></a></p>
-                <div class="row">
-                    <div class="col-sm">
-                        <a href="code%20examples/dqv/Loader.txt">Loader.cs</a>
-                    </div>
-                    <div class="col-sm">
-                        <a href="code%20examples/dqv/PlayerMovement.txt">PlayerMovement.cs</a>
-                    </div>
-                    <div class="col-sm">
-                        <a href="code%20examples/dqv/HookHandler.txt">HookHandler.cs</a>
-                    </div>
-                </div>
-                <p>
-                    During my 4th year at university I took a game development submodule. In this submodule I was tasked
-                    with creating a game in which you collected 10 'treasures' around the Durham University campus. The
-                    game uses a traditional platformer design combined with a small hint of Metroidvania.
-                </p>
-                <p>
-                    The game was developed by me over the course of 2 months, is completely finished and features 4
-                    levels. My aim with this game was to keep the project scale low but have a polished final product.
-                    As the game is quite short, I added a rank system that challenges players in order to add some
-                    replay value. To get the best rank for a level you must collect all of its treasure while also
-                    finishing in a quick time.
-                </p>
-                <p>
-                    The character design and UI elements were created by me, however other assets were taken from
-                    pre-existing sources to save time.
-                </p>
-                <p>
-                    I felt this short project was a good for me as it gave me experience of creating and polishing a
-                    full feature-complete game from start to finish.
-                </p>
-                <div class="row">
-                    <div class="col-sm">
-                        <a href="dqv-2.png">
-                            <img src="dqv-2.png" class="img-fluid">
-                        </a>
-                    </div>
-                    <div class="col-sm">
-                        <a href="dqv-1.png">
-                            <img src="dqv-1.png" class="img-fluid">
-                        </a>
-                    </div>
-                    <div class="col-sm">
-                        <a href="dqv-4.png">
-                            <img src="dqv-4.png" class="img-fluid">
-                        </a>
-                    </div>
-                </div>
-                <div class="centre-yt">
-                    <iframe width="720" height="405" src="https://www.youtube.com/embed/EQCLC1c-RY4" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                </div>
-            </li>
-
-            <li class="list-group-item">
                 <h3><b>Danganronpa Fan Game</b></h3>
                 <div class="row">
                     <div class="col-sm">
@@ -208,9 +173,8 @@
                     </div>
                 </div>
                 <p>
-                    I am creating this game in collaboration with a friend.
-                    This will eventually be a full-length 'fan game' based on the 'Danganronpa' series, in which
-                    students trapped in a high school must murder each other to survive.
+                    I am creating this game in collaboration with a friend. I have worked on and contributed to almost
+                    all parts of the code, including the dialogue systems, UI implementation, and XML structure.
                 </p>
                 <p>
                     The game has been developing over the course of 2 years. Over these 2 years i've gained a lot of
@@ -219,11 +183,8 @@
                     systems that would scale well.
                 </p>
                 <p>
-                    The game features 16 unique main characters all designed and drawn by me. Almost all of the UI Elements were also created by me.
-                    However in the video, only one of the characters is designed by me, the others are placeholders.
                     If you want to see the character designs I made, you can see them
-                    <a href="characters.html"><b>here</b></a>. The songs in the video are from the Danganronpa 1, 2 and 3
-                    soundtracks, aside from the first song which I composed myself.
+                    <a href="characters.html"><b>here</b></a>.
                 </p>
                 <div class="row">
                     <div class="col-sm">
@@ -274,7 +235,7 @@
                 </p>
                 <p>
                     The project was produced in Unity, using the SteamVR plugin. You can find a log of my project's
-                    progress over time (videos)
+                    progress over time (videos).
                     <a href="https://drive.google.com/open?id=1SKSxd-x1Wj1ui3oTpDzCllUAZJP1Jgck"><b>here</b></a>.
                 </p>
                 <div class="row">
@@ -296,46 +257,102 @@
                 </div>
             </li>
             <li class="list-group-item">
-                <h3><b>Original Card Game</b></h3>
-                <p><a href="rules.pdf"><b>Rulebook PDF</b></a></p>
+                <h3><b>Football Simulation</b></h3>
                 <div class="row">
                     <div class="col-sm">
-                        <a href="code%20examples/gstcg/CardLoader.txt">CardLoader.cs</a>
+                        <a href="code%20examples/fm/Match.txt">Match.cs</a>
                     </div>
                     <div class="col-sm">
-                        <a href="code%20examples/gstcg/ConceptSearchCardContainer.txt">ConceptSearchCardContainer.cs</a>
+                        <a href="code%20examples/fm/PitchPlayer.txt">PitchPlayer.cs</a>
                     </div>
                     <div class="col-sm">
-                        <a href="code%20examples/gstcg/DeckEditCard.txt">DeckEditCard.cs</a>
-                    </div>
-                    <div class="col-sm">
-                        <a href="code%20examples/gstcg/Duel.txt">Duel.cs</a>
+                        <a href="code%20examples/fm/FixtureGenerator.txt">FixtureGenerator.cs</a>
                     </div>
                 </div>
                 <p>
-                    I came up with the idea to create a card game based around the Gaming Society my friends and I
-                    attend at University. Initially I came up with the system for the game, then my friends and I
-                    created over 200 cards with different effects and stats based on the in-jokes of our Gaming society.
-                    The aesthetic we went for was 'extremely crude MS paint'.
+                    During the 2020 lockdown and the absence of football, I found myself wanting to create a football
+                    simulation game that was a happy medium between the involved nature of Football Manager and the less
+                    in-depth FIFA.
                 </p>
                 <p>
-                    After the cards were created, I made a virtual playing mat for the cards in which 2 players could
-                    build decks and face off against each other. We held a tournament for it at our 24 hour Gaming
-                    Society event. At the moment the functionality is that of a real life playing mat with a few
-                    additional features, however if I have time in the future I may extend it into a fully
-                    polished digital card game.
+                    I created a system that simulates games based on the stats of different players. In a match, the
+                    football pitch is split into a 7x3 grid, within which players can move. Players make decisions and
+                    perform actions based on their stats, the position of the ball, their team's current formation,
+                    and the positions of their teammates. Better players make better decisions and execute actions more
+                    successfully.
                 </p>
                 <div class="row">
                     <div class="col-sm">
-                        <a href="gstcg-1.png">
-                            <img src="gstcg-1.png" class="img-fluid">
+                        <a href="fm1.png">
+                            <img src="fm1.png" class="img-fluid">
+                        </a>
+                    </div>
+                    <div class="col-sm" id="league_table">
+                        <a href="fm2.png">
+                            <img src="fm2.png" class="img-fluid">
                         </a>
                     </div>
                     <div class="col-sm">
-                        <a href="gstcg-2.png">
-                            <img src="gstcg-2.png" class="img-fluid">
+                        <a href="fm3.PNG">
+                            <img src="fm3.PNG" class="img-fluid">
                         </a>
                     </div>
+                </div>
+                <div class="centre-yt">
+                    <iframe width="720" height="405" src="https://www.youtube.com/embed/aOcDb8C4Zww" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </li>
+            <li class="list-group-item">
+                <h3><b>2D Platformer</b></h3>
+                <p><a href="https://drive.google.com/open?id=10zHokjVrOw7AWaiPuyx0ijtF1g0vZVZT"><b>DOWNLOAD</b></a></p>
+                <div class="row">
+                    <div class="col-sm">
+                        <a href="code%20examples/dqv/Loader.txt">Loader.cs</a>
+                    </div>
+                    <div class="col-sm">
+                        <a href="code%20examples/dqv/PlayerMovement.txt">PlayerMovement.cs</a>
+                    </div>
+                    <div class="col-sm">
+                        <a href="code%20examples/dqv/HookHandler.txt">HookHandler.cs</a>
+                    </div>
+                </div>
+                <p>
+                    During my 4th year at university I took a game development submodule. In this submodule I was tasked
+                    with creating a game in which you collected 10 'treasures' around the Durham University campus.
+                </p>
+                <p>
+                    The game was developed by me over the course of 2 months, is completely finished and features 4
+                    levels. My aim with this game was to keep the project scale low but have a polished final product.
+                    As the game is quite short, I added a rank system that challenges players in order to add some
+                    replay value.
+                </p>
+                <p>
+                    The character design and UI elements were created by me, however other assets were taken from
+                    pre-existing sources to save time.
+                </p>
+                <p>
+                    I felt this short project was a good for me as it gave me experience of creating and polishing a
+                    full feature-complete game from start to finish.
+                </p>
+                <div class="row">
+                    <div class="col-sm">
+                        <a href="dqv-2.png">
+                            <img src="dqv-2.png" class="img-fluid">
+                        </a>
+                    </div>
+                    <div class="col-sm">
+                        <a href="dqv-1.png">
+                            <img src="dqv-1.png" class="img-fluid">
+                        </a>
+                    </div>
+                    <div class="col-sm">
+                        <a href="dqv-4.png">
+                            <img src="dqv-4.png" class="img-fluid">
+                        </a>
+                    </div>
+                </div>
+                <div class="centre-yt">
+                    <iframe width="720" height="405" src="https://www.youtube.com/embed/EQCLC1c-RY4" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 </div>
             </li>
         </ul>

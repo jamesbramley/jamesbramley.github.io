@@ -1,0 +1,107 @@
+using System.Collections;
+using System.Linq;
+using UnityEngine;
+using DriftCar;
+using UnityEngine.PostProcessing;
+
+namespace DefaultNamespace
+{
+    [RequireComponent(typeof(Camera))]
+    [RequireComponent(typeof(PostProcessingBehaviour))]
+    public class CameraMovement : MonoBehaviour
+    {
+        private Camera cam;
+        private PostProcessingBehaviour ppb;
+        
+        public Transform Target { private get; set; }
+        private Car car;
+        [SerializeField] private float offset;
+        [SerializeField] private float height;
+        [Range(0, 1)][SerializeField] private float rotationSpeed;
+        [Range(0, 1)][SerializeField] private float followSpeed;
+        [Range(0, 1)][SerializeField] private float heightAdjustSpeed;
+
+        private const float SpeedReference = 100f;
+
+        private Coroutine startBoostEffect;
+        private Coroutine endBoostEffect;
+
+        private void Awake()
+        {
+            Target = FindObjectsOfType<Car>().First(c => c.gameObject.CompareTag("Player")).transform;
+            car = Target.GetComponent<Car>();
+            cam = GetComponent<Camera>();
+            ppb = GetComponent<PostProcessingBehaviour>();
+        }
+
+        private void FixedUpdate()
+        {
+            Follow();
+            BoostEffect();
+        }
+
+        private void Follow()
+        {
+            var offsetModifier = 1 + car.Speed / SpeedReference;
+            var pos = Target.position + -Target.forward*offset*offsetModifier;
+            pos.y = Mathf.SmoothStep(transform.position.y, (Target.position + Target.up * height).y, heightAdjustSpeed);
+            transform.position = Vector3.Lerp(transform.position, pos, followSpeed);
+            var rot = Quaternion.Lerp(transform.rotation, 
+                Quaternion.LookRotation(Target.forward, Vector3.up), rotationSpeed);
+            transform.rotation = rot;
+        }
+
+        private void BoostEffect()
+        {
+            if (car.Boosting)
+            {
+                Boost();
+            }
+            else
+            {
+                StopBoost();
+            }
+        }
+
+        private void Boost()
+        {
+            if (startBoostEffect != null) return;
+
+            if (endBoostEffect != null)
+            {
+                StopCoroutine(endBoostEffect);
+                endBoostEffect = null;
+            }
+
+            ppb.profile.chromaticAberration.enabled = true;
+            startBoostEffect = StartCoroutine(ChangeFov(80f));
+        }
+
+        private void StopBoost()
+        {
+            if (endBoostEffect != null) return;
+
+            if (startBoostEffect != null)
+            {
+                StopCoroutine(startBoostEffect);
+                startBoostEffect = null;
+            }
+            
+            ppb.profile.chromaticAberration.enabled = false;
+            endBoostEffect = StartCoroutine(ChangeFov(60f));
+        }
+
+        IEnumerator ChangeFov(float target, float speed=0.1f)
+        {
+            while (Mathf.Abs(cam.fieldOfView - target) > 0.001f)
+            {
+                cam.fieldOfView = Mathf.SmoothStep(cam.fieldOfView, target, speed);
+                yield return null;
+            }
+
+            cam.fieldOfView = target;
+            startBoostEffect = null;
+            endBoostEffect = null;
+        }
+    }
+}

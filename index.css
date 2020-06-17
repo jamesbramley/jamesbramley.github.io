@@ -1,6 +1,7 @@
 body {
     background-color: #343434;
     color: white;
+    font-size: large;
 }
 
 li.list-group-item {
@@ -10,6 +11,22 @@ li.list-group-item {
 .centre-yt {
     padding-top: 25px;
     text-align: center;
+}
+
+h1, h2, h3 {
+    color: goldenrod;
+}
+
+#list_container {
+    max-width: 100%;
+}
+
+#page_header {
+    max-width: 90%;
+}
+
+a {
+    color: deeppink;
 }
 
 iframe {

@@ -1,0 +1,198 @@
+using System.Collections.Generic;
+using System.Linq;
+using DriftRace;
+using UnityEditor;
+using UnityEditor.Experimental.TerrainAPI;
+using UnityEngine;
+
+namespace Road
+{
+	// Based on the Unite 2015 talk: "A coder's guide to spline-based procedural geometry." https://www.youtube.com/watch?v=o9RK6O2kOKo
+
+    [RequireComponent(typeof(MeshFilter))]
+    [RequireComponent(typeof(MeshCollider))]
+    public class RoadSegment : MonoBehaviour
+    {
+        [SerializeField] private ExtrudeShape extrudeShape;
+        [SerializeField] private int segments;
+        [SerializeField] private Transform startPoint;
+        [SerializeField] private Transform endPoint;
+        
+        private Mesh mesh;
+
+        private BezierCurve3D spline = new BezierCurve3D();
+
+        private MeshCollider meshCollider;
+        [SerializeField] private bool isFixed;
+        [SerializeField] private bool startLine;
+        public RoadSegment FirstSegment { get; set; }
+        [SerializeField] private int segmentNumber;
+
+        private Checkpoint checkpoint;
+
+        [ContextMenu("SpawnNextRoadSection")]
+        private void SpawnNextRoadSection()
+        {
+            var prefab = Resources.Load<RoadSegment>("prefabs/RoadSegment");
+            var roadSegment = Instantiate(prefab);
+            roadSegment.transform.position = transform.position;
+            roadSegment.FirstSegment = FirstSegment;  // Pass on a reference to the starting line.
+            roadSegment.OnSpawn(endPoint, checkpoint.Number);
+        }
+        
+        [ContextMenu("AutoCompleteTrack")]
+        private void AutoCompleteTrack()
+        {
+            var prefab = Resources.Load<RoadSegment>("prefabs/RoadSegment");
+            var roadSegment = Instantiate(prefab);
+            roadSegment.transform.position = transform.position;
+            roadSegment.OnSpawn(endPoint, checkpoint.Number);
+            roadSegment.FirstSegment = FirstSegment;  // Pass on a reference to the starting line.
+            roadSegment.AutoComplete();
+        }
+
+        private Vector3 GetPos(int i)
+        {
+            if (i == 0) return startPoint.position;
+            if (i == 1) return startPoint.TransformPoint(Vector3.forward * startPoint.localScale.z);
+            if (i == 2) return endPoint.TransformPoint(Vector3.back * endPoint.localScale.z);
+            if (i == 3) return endPoint.position;
+            
+            return default(Vector3);
+        }
+
+        private void Awake()
+        {
+            mesh = new Mesh();
+            mesh.name = "RoadSegment";
+            GetComponent<MeshFilter>().sharedMesh = mesh;
+            meshCollider = GetComponent<MeshCollider>();
+            
+            var checkpointPrefab = Resources.Load<Checkpoint>("prefabs/Checkpoint");
+            checkpoint = Instantiate(checkpointPrefab);
+            checkpoint.UpdatePosition(endPoint);
+            checkpoint.transform.SetParent(endPoint);
+            
+            if (startLine)
+            {
+                FirstSegment = this;
+                checkpoint.Number = 1;
+            }
+            else
+            {
+                checkpoint.Number = segmentNumber;
+            }
+        }
+
+        private void Start()
+        {
+            GenerateMesh();
+        }
+
+        private void Update()
+        {
+            if (isFixed) return;
+            GenerateMesh();
+        }
+
+        public void AutoComplete()
+        {
+            endPoint.position = FirstSegment.endPoint.position;
+            endPoint.rotation = FirstSegment.endPoint.rotation;
+        }
+
+        public void OnSpawn(Transform previousEndPoint, int previousCheckpointNumber)
+        {
+            const float spawnedRoadLength = 40f;
+            transform.position = previousEndPoint.TransformPoint(Vector3.forward * spawnedRoadLength);
+            startPoint.position = previousEndPoint.position;
+            startPoint.rotation = previousEndPoint.rotation;
+            endPoint.position = startPoint.TransformPoint(Vector3.forward * spawnedRoadLength); 
+            endPoint.rotation = previousEndPoint.rotation;
+            checkpoint.Number = previousCheckpointNumber + 1;
+        }
+
+        private void OnDrawGizmos()
+        {
+            Gizmos.color = Color.white;
+            for (int i = 0; i < 4; i++)
+            {
+                Gizmos.DrawSphere(GetPos(i), 0.15f);
+            }
+            Handles.DrawBezier(GetPos(0), GetPos(3), GetPos(1), GetPos(2), Color.cyan, EditorGUIUtility.whiteTexture, 2f);
+        }
+
+        private void GenerateMesh()
+        {
+            mesh.Clear();
+
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            
+            var positions = ExtractControlPointPositions();  // World space.
+
+            var t = 0f;
+            // Creating vertices.
+            for (int i = 0; i < segments+1; i++)
+            {
+                var interval = 1f / segments;
+                var up = Vector3.Lerp(startPoint.up, endPoint.up, t).normalized;  // World space.
+                var orientedPoint = spline.GetOrientedPoint(positions, t, up);
+                
+                foreach (var vertex in extrudeShape.vertices)
+                {
+                    var vertexOp = orientedPoint.LocalToWorld(vertex.point);
+                    vertices.Add(transform.InverseTransformPoint(vertexOp));
+                    normals.Add(orientedPoint.LocalToWorldDirection(vertex.normal));
+                    uvs.Add(new Vector2(vertex.u, i / ((float) segments + 1)));
+                }
+
+                t += interval;
+            }
+
+            var triangleIndices = new List<int>();
+            // Creating triangles.
+            for (int i = 0; i < segments; i++)
+            {
+                var rootIndex = i * extrudeShape.VertexCount;
+                var nextRootIndex = (i + 1) * extrudeShape.VertexCount;
+
+                for (int j = 0; j < extrudeShape.LineCount; j+=2)
+                {
+                    var lineIndexA = extrudeShape.lines[j];  // 
+                    var lineIndexB = extrudeShape.lines[j + 1];
+                    var currentA = rootIndex + lineIndexA;
+                    var currentB = rootIndex + lineIndexB;
+                    var nextA = nextRootIndex + lineIndexA;
+                    var nextB = nextRootIndex + lineIndexB;
+                    
+                    triangleIndices.Add(currentA);
+                    triangleIndices.Add(nextA);
+                    triangleIndices.Add(nextB);
+                    
+                    triangleIndices.Add(currentA);
+                    triangleIndices.Add(nextB);
+                    triangleIndices.Add(currentB);
+                }
+            }
+            
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetTriangles(triangleIndices, 0);
+            
+            meshCollider.sharedMesh = mesh;
+        }
+        
+        private Vector3[] ExtractControlPointPositions()
+        {
+            var positions = new Vector3[4];
+            for (int i = 0; i < 4; i++)
+            {
+                positions[i] = GetPos(i);
+            }
+
+            return positions;
+        }
+    }
+}

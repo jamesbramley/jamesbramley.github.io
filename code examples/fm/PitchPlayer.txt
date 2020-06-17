@@ -1,0 +1,561 @@
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using UnityEngine;
+
+public class PitchPlayer
+{
+    private readonly Player player;
+    public int PitchArea { get; private set; }
+    public Position AssignedPosition { get; private set; }
+    public TeamType HomeOrAway { get; private set; }
+    private readonly Pitch pitch;
+    private Dictionary<int, int> baseWeights;
+
+    private bool inPossession;
+    private float stamina;
+    private readonly int enemyGoal;
+
+    private const float BeastlinessModifier = 0.1f;  // How much beastliness affects rolls.
+    private PitchPlayer receivedBallFrom;
+    
+    public int GoalsToday { get; private set; }
+    public int AssistsToday { get; set; }
+    
+    public enum TeamType
+    {
+        Home,
+        Away,
+        Neutral
+    }
+
+    public PitchPlayer(Player player, TeamType homeOrAway, Pitch pitch, Position position)
+    {
+        this.player = player;
+        AssignedPosition = position;
+        PitchArea = Positions.GetStartingPosition(AssignedPosition, homeOrAway);
+        HomeOrAway = homeOrAway;
+        this.pitch = pitch;
+        baseWeights = HomeOrAway == TeamType.Home
+            ? Positions.GetHomePositionWeights(AssignedPosition, pitch.Ball.Area)
+            : Positions.GetAwayPositionWeights(AssignedPosition, pitch.Ball.Area);
+
+        enemyGoal = HomeOrAway == TeamType.Home ? 14 : 8;
+        stamina = player.Fitness;
+    }
+
+    public void GetBall(PitchPlayer passer=null)
+    {
+        inPossession = true;
+        pitch.Ball.MoveToArea(PitchArea);
+        pitch.Ball.Loose = false;
+        pitch.Ball.PlayerInPossession = this;
+
+        receivedBallFrom = passer;
+    }
+
+    public void LoseBall()
+    {
+        inPossession = false;
+        pitch.Ball.Loose = true;
+        pitch.Ball.PlayerInPossession = null;
+    }
+
+    public Player GetPlayer()
+    {
+        return player;
+    }
+
+    public void Act()
+    {
+        var pressures = GetAreaPressures();  // O(1)
+        var goalChances = GetAreaGoalChances();  // O(1)
+        
+        if (inPossession)
+        {
+            PerformOnTheBallActions(pressures, goalChances);
+        }
+        else
+        {
+            PerformOffTheBallActions(pressures, goalChances);
+        }
+        
+        RollForInjury();
+    }
+
+    private void Move(Dictionary<int, int> pressures, Dictionary<int, int> goalChances)
+    {
+//        if (pitch.Ball.Area == PitchArea)
+//        {
+//            return;
+//        }
+        
+        // This function is for player movement when out of possession.
+        // Move to closest position to ball without leaving assigned area. If ball is near but out of area, maybe go
+        // towards it anyway.
+        // If distances are equal, go to position with larger weight.
+        // If the ball is too far away, go back to assigned position.
+        // Assigned position area is changed based on ball position. 
+
+        var positions = HomeOrAway == TeamType.Home
+            ? Positions.GetHomePositionWeights(AssignedPosition, pitch.Ball.Area)
+            : Positions.GetAwayPositionWeights(AssignedPosition, pitch.Ball.Area);
+        var activePositions = positions.ToList();
+        var adjacentPositions = GetAdjacentAreas(PitchArea);
+        var adjacentPositionClosestToBall = GetAdjacentPositionClosestToBall(adjacentPositions);
+
+        LoseStamina();
+        
+        if (player.GetFieldArea() == FieldArea.Attack || player.GetFieldArea() == FieldArea.Midfield)
+        {
+            if (activePositions.Exists(kv => kv.Key == adjacentPositionClosestToBall && kv.Value > 0))
+            {
+                PitchArea = GetMostPromisingPosition(adjacentPositions, pressures, goalChances);
+                return;
+            }
+        }
+        else
+        {
+            if (activePositions.Exists(kv => kv.Key == adjacentPositionClosestToBall && kv.Value > 0))
+            {
+                PitchArea = MathTools.RandomBool()
+                    ? adjacentPositionClosestToBall
+                    : GetMaxPosition(adjacentPositions, positions);
+                return;
+            }
+        }
+
+        // Move towards best weighted position.
+        PitchArea = GetMaxPosition(adjacentPositions, positions);
+    }
+
+    private int GetMaxPosition(List<int> adjacentPositions, Dictionary<int, int> positions)
+    {
+        var bestScore = -9999;  // Impossible to be smaller.
+        var bestPosition = -1;
+        foreach (var position in adjacentPositions)
+        {
+            var score = positions[position];
+            if (score > bestScore)
+            {
+                bestPosition = position;
+                bestScore = score;
+            }
+        }
+
+        return bestPosition;
+    }
+
+    private int GetMostPromisingPosition(List<int> adjacentPositions, Dictionary<int, int> pressures, Dictionary<int, int> goalChances)
+    {
+        var bestScore = -9999;  // Impossible to be smaller.
+        var bestPosition = -1;
+        foreach (var position in adjacentPositions)
+        {
+            var score = goalChances[position] - pressures[position];
+            if (score > bestScore)
+            {
+                bestPosition = position;
+                bestScore = score;
+            }
+        }
+
+        return bestPosition;
+    }
+
+    private int GetAdjacentPositionClosestToBall(List<int> adjacentPositions)
+    {
+        var bestDistance = 9999;  // Impossible to be larger.
+        var bestPosition = -1;
+        foreach (var position in adjacentPositions)
+        {
+            var distance = pitch.GetDistance(position, pitch.Ball.Area);
+            if (distance < bestDistance)
+            {
+                bestPosition = position;
+                bestDistance = distance;
+            }
+        }
+
+        return bestPosition;
+    }
+
+    private void RollForInjury()
+    {
+        const float baseInjuryChance = 0.00000000011722222f;  // Chance every action of getting injured.
+        var chance = baseInjuryChance * (120f/player.Fitness);
+        var roll = MathTools.RandomFloat();
+        if (roll > chance)
+        {
+            return;
+        }
+        
+        //Debug.Log("Injury sustained by player: " + player.Id);
+        LoseStamina(MathTools.RandomInt(30, 80));
+        player.InjuryLength = Math.Max(1, MathTools.RandomGaussianInRange(1, 20, 0.2f, 0.1f));
+    }
+
+    public void SetPitchArea(int area)
+    {
+        PitchArea = area;
+    }
+
+    public void ResetPosition()
+    {
+        PitchArea = Positions.GetStartingPosition(AssignedPosition, HomeOrAway);
+    }
+
+    private void LoseStamina()
+    {
+        stamina -= 14.85f/player.Stats.Stamina;
+        if (stamina < 0)
+        {
+            stamina = 0;
+        }
+    }
+    
+    private void LoseStamina(float amount)
+    {
+        stamina -= amount;
+    }
+
+    private void GainStamina(float amount)
+    {
+        stamina += amount;
+    }
+
+    private void PerformOffTheBallActions(Dictionary<int, int> pressures, Dictionary<int, int> goalChances)
+    {
+        Move(pressures, goalChances);
+    }
+
+    private void PerformOnTheBallActions(Dictionary<int, int> pressures, Dictionary<int, int> goalChances)
+    {
+        // Let's order the areas based on pressure + goal chance. We can act based on the result.
+        var orderedAreas = new Dictionary<int, int>();
+        for (int i = 0; i < pressures.Count; i++)
+        {
+            orderedAreas.Add(i + 1, goalChances[i + 1] - pressures[i + 1]);
+        }
+        
+        ChooseAction(orderedAreas);
+    }
+
+    private void ChooseAction(Dictionary<int, int> areas)
+    {
+        // The player chooses an action based on their stats and the situation.
+        var orderedAreas = new List<int>();
+        foreach (var kv in areas)
+        {
+            var area = kv.Key;
+            orderedAreas.Add(area);
+        }
+
+        orderedAreas = orderedAreas.OrderBy(area => areas[area]).Reverse().ToList();
+
+        var mostPromisingArea = orderedAreas[0];
+        
+        // orderedAreas[0] should be the most promising area.
+        // If the distance to goal is too big we want to try and keep possession or pass away.
+        if (mostPromisingArea == PitchArea && pitch.GetDistance(PitchArea, enemyGoal) <= 1)
+        {
+            // If the distance is short enough just shoot.
+            Shoot();
+            return;
+        }
+
+        var distanceToMostPromisingArea = pitch.GetDistance(PitchArea, mostPromisingArea);
+        if (distanceToMostPromisingArea <= 1)
+        {
+            // Dribble or Short Pass.
+            // Can't pass if no teammate - must dribble.
+            if (!CheckTeamMateInArea(mostPromisingArea))
+            {
+                DribbleToArea(mostPromisingArea);
+                return;
+            }
+            
+            // Otherwise we could either dribble or pass.
+            var dribble = MathTools.RandomBool();
+            if (dribble)
+            {
+                DribbleToArea(mostPromisingArea);
+            }
+            else
+            {
+                AttemptPass(orderedAreas);
+            }
+        }
+        else
+        {
+            // Long Pass or stay put.
+            var pass = MathTools.RandomBool();
+            if (pass)
+            {
+                AttemptPass(orderedAreas);
+            }
+            
+            // Do nothing.
+        }
+    }
+
+    private void AttemptPass(List<int> orderedAreas)
+    {
+        foreach (var orderedArea in orderedAreas)
+        {
+            var mostPromisingArea = orderedArea;
+                    
+            var teamMates = GetTeamMatesInArea(mostPromisingArea);
+            if (teamMates.Count == 0)
+            {
+                // There is no one there. We shouldn't pass there.
+                continue;
+            }
+                
+            var teamMate = MathTools.RandomChoice(teamMates);
+            PassToTeamMate(teamMate);
+        }
+    }
+
+    private void DribbleToArea(int newArea)
+    {
+        // Should only be called if newArea is adjacent.
+        var enemies = pitch.GetOutfieldPlayersInArea(PitchArea, GetOpposite(HomeOrAway));
+        
+        // If there are no enemies in current area, we can just dribble straight to the new one.
+        if (enemies.Count == 0)
+        {
+            PitchArea = newArea;
+            return;
+        }
+        
+        var enemyTackling = enemies.Average(e =>
+            e.player.Stats.Tackling + e.player.Stats.Beastliness * BeastlinessModifier);
+        var enemyDefending = enemies.Average(e =>
+            e.player.Stats.DefensivePositioning + e.player.Stats.Beastliness * BeastlinessModifier);
+        var enemyTotal = (enemyDefending + enemyTackling) / 2f;
+        var totalDribbling = (player.Stats.Skill + player.Stats.Dribbling + player.Stats.Speed + player.Stats.Agility) /
+                             4f + BeastlinessModifier*player.Stats.Beastliness;
+
+        if (totalDribbling + RandomActionModifier() > enemyTotal + RandomActionModifier())
+        {
+            PitchArea = newArea;
+            return;
+        }
+        
+        LoseBall();
+        var enemyPlayer = MathTools.RandomChoice(enemies);
+        enemyPlayer.GetBall();
+    }
+
+    private static int RandomActionModifier(int min =-20, int max=20)
+    {
+        return MathTools.RandomGaussianInRange(min, max);
+    }
+
+    private void PassToTeamMate(PitchPlayer teamMate)
+    {
+        LoseBall();
+
+        var enemies = pitch.GetOutfieldPlayersInArea(teamMate.PitchArea, GetOpposite(HomeOrAway));
+        var enemyTotal = 0f;
+        if (enemies.Count > 0)
+        {
+            var enemyInterceptions =
+                enemies.Average(e => e.player.Stats.Interceptions + e.player.Stats.Beastliness * BeastlinessModifier);
+            var enemyMarking = enemies.Average(e =>
+                e.player.Stats.Marking + e.player.Stats.Beastliness * BeastlinessModifier);
+            enemyTotal = (enemyInterceptions + enemyMarking) / 2f;
+        }
+        
+        var distance = pitch.GetDistance(PitchArea, teamMate.PitchArea);
+        var passing = distance <= 1 ? player.Stats.ShortPassing : player.Stats.LongPassing;
+        var totalPassing = (passing + player.Stats.Vision)/2f + BeastlinessModifier * player.Stats.Beastliness;
+        
+        var onTarget = totalPassing + RandomActionModifier() > MathTools.RandomGaussianInRange(0, 100, 0.3f, 0.1f);
+        if (!onTarget)
+        {
+            // Missed
+            pitch.Ball.MoveToArea(MathTools.RandomChoice(GetAdjacentAreas(teamMate.PitchArea)));
+            return;
+        }
+        
+        if (totalPassing + RandomActionModifier() > enemyTotal + RandomActionModifier())
+        {
+            teamMate.GetBall(this);
+            return;
+        }
+
+        // Ball goes loose.
+        if (enemies.Count == 0)
+        {
+            return;
+        }
+        
+        var enemyPlayer = MathTools.RandomChoice(enemies);
+        enemyPlayer.GetBall();
+    }
+
+    private void Shoot()
+    {
+        LoseBall();
+        
+        var enemies = pitch.GetOutfieldPlayersInArea(PitchArea, GetOpposite(HomeOrAway));
+        var enemyInterceptions = 0f;
+        var enemyGk = pitch.GetEnemyGoalKeeper(HomeOrAway);
+
+        if (enemies.Count > 0)
+        {
+            enemyInterceptions =
+                enemies.Average(e => e.player.Stats.Interceptions + e.player.Stats.Beastliness * BeastlinessModifier);
+        }
+        var shootingTotal = (player.Stats.AttackPositioning + player.Stats.Finishing) / 2f +
+                            player.Stats.Beastliness * BeastlinessModifier;
+        
+        if (shootingTotal + RandomActionModifier() <= enemyInterceptions)
+        {
+            // Blocked.
+            // Need to add a chance for a corner.
+            if (enemies.Count > 0)
+            {
+                MathTools.RandomChoice(enemies).GetBall();
+                return;
+            }
+            
+            enemyGk.GetBall();
+            return;
+        }
+        
+        // Is it on target?
+        var distance = pitch.GetDistance(PitchArea, enemyGoal);
+        shootingTotal -= distance * 15;
+
+        // Does the keeper save?
+        var onTarget = shootingTotal + RandomActionModifier() > MathTools.RandomGaussianInRange((int)shootingTotal + 13, (int)shootingTotal + 70, 0.3f, 0.1f);
+        if (!onTarget)
+        {
+            // Missed
+            enemyGk.GetBall();
+            return;
+        }
+        
+        if (shootingTotal + RandomActionModifier() > enemyGk.player.Stats.GoalkeeperRating() + RandomActionModifier())
+        {
+            // The player scores.
+            player.History.LifeTimeGoals += 1;
+            GoalsToday += 1;
+            if (receivedBallFrom != null)
+            {
+                receivedBallFrom.player.History.LifeTimeAssists += 1;
+                receivedBallFrom.AssistsToday += 1;
+            }
+            SendNoteWorthyAction(ActionOutcome.ScoreGoal);
+            return;
+        }
+        
+        // The keeper saves.
+        enemyGk.GetBall();
+    }
+
+    private void SendNoteWorthyAction(ActionOutcome actionOutcome)
+    {
+        pitch.AddNoteworthyAction(new NoteworthyAction(actionOutcome, HomeOrAway, player.Id));
+    }
+
+    private bool CheckAreaIsAdjacent(int area)
+    {
+        var adjacentAreas = GetAdjacentAreas(area);
+        return adjacentAreas.Contains(area);
+    }
+
+    private List<int> GetAdjacentAreas(int area)
+    {
+        var adjacentAreas = new List<int>();
+        
+        // Yeah this is pretty horrible but whatever.
+        // Left
+        if (PitchArea != 15 && PitchArea != 8 && PitchArea != 1)
+        {
+            adjacentAreas.Add(PitchArea - 1);
+            // Up Left
+            if (PitchArea > 8)
+            {
+                adjacentAreas.Add(PitchArea - 8);
+            }
+            
+            // Down Left
+            if (PitchArea <= 14)
+            {
+                adjacentAreas.Add(PitchArea + 6);
+            }
+        }
+        
+        // Right
+        if (PitchArea != 21 && PitchArea != 14 && PitchArea != 7)
+        {
+            adjacentAreas.Add(PitchArea + 1);
+            // Up Right
+            if (PitchArea >= 8)
+            {
+                adjacentAreas.Add(PitchArea - 6);
+            }
+            
+            // Down Right
+            if (PitchArea < 14)
+            {
+                adjacentAreas.Add(PitchArea + 8);
+            }
+        }
+        
+        // Up
+        if (PitchArea >= 8)
+        {
+            adjacentAreas.Add(PitchArea - 7);
+        }
+        
+        // Down
+        if (PitchArea <= 14)
+        {
+            adjacentAreas.Add(PitchArea + 7);
+        }
+
+        return adjacentAreas;
+    }
+
+    private Dictionary<int, int> GetAreaPressures()
+    {
+        return HomeOrAway == TeamType.Home ? pitch.PressuresForHomeTeam : pitch.PressuresForAwayTeam;
+    }
+    
+    private Dictionary<int, int> GetAreaGoalChances()
+    {
+        return HomeOrAway == TeamType.Home ? pitch.GoalChancesForHomeTeam : pitch.GoalChancesForAwayTeam;
+    }
+
+    private List<PitchPlayer> GetTeamMates()
+    {
+        return pitch.GetPlayers(HomeOrAway);
+    }
+
+    private List<PitchPlayer> GetTeamMatesInArea(int area)
+    {
+        return pitch.GetOutfieldPlayersInArea(area, HomeOrAway);
+    }
+
+    private bool CheckTeamMateInArea(int area)
+    {
+        return pitch.GetPlayers().Exists(p => p.PitchArea == area);
+    }
+
+    private static TeamType GetOpposite(TeamType teamType)
+    {
+        if (teamType == TeamType.Away)
+        {
+            return TeamType.Home;
+        }
+
+        return TeamType.Away;
+    }
+}
