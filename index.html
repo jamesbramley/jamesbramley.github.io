@@ -105,12 +105,13 @@
                     </div>
                 </div>
                 <p>
-                    I wanted to make a 3D racing game as I am a fan of arcade racers and wanted to try my hand at a
-                    genre of game I hadn't yet worked on.
-                    I implemented some procedural mesh generation for the roads to make the racetrack easier to
-                    construct, based on <a href="https://www.youtube.com/watch?v=o9RK6O2kOKo"><b>this Unite 2015 talk</b></a>.
+                    I wanted to make a 3D racing game prototype as I am a fan of arcade racers and wanted to try my hand
+                    at a genre of game I hadn't yet worked on.
+                    Within Unity, there isn't a simple way to create and modify roads,
+                    so I implemented some procedural mesh generation to make the racetrack easier to construct based on
+                    <a href="https://www.youtube.com/watch?v=o9RK6O2kOKo"><b>this Unite 2015 talk</b></a>.
                     I also created a camera movement system which adapts its position based on the speed and position of
-                    the car.
+                    the car, which helps give the game a sense of speed absent from a more static camera.
                     Car model taken from the Unity asset store.
                 </p>
                 <div class="row centre-yt container-fluid">
@@ -175,7 +176,8 @@
                 </div>
                 <p>
                     I am creating this game in collaboration with a friend. I have worked on and contributed to almost
-                    all parts of the code, including the dialogue systems, UI implementation, and XML structure.
+                    all parts of the code, including the dialogue systems, player-environment interactions,
+                    UI, and XML structure.
                 </p>
                 <p>
                     The game has been developing over the course of 2 years. Over these 2 years i've gained a lot of
@@ -334,6 +336,11 @@
                     perform actions based on their stats, the position of the ball, their team's current formation,
                     and the positions of their teammates. Better players make better decisions and execute actions more
                     successfully.
+                </p>
+                <p>
+                    To save inputting data for 200 teams and ~5000 players, I generate them from databases of city
+                    names, countries, first names, and surnames. I gave all of the players randomly assigned values for
+                    each of their attributes, based on an initial 'player quality' and using a Gaussian distribution.
                 </p>
                 <div class="row">
                     <div class="col-sm">
